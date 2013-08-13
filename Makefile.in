@@ -1,0 +1,651 @@
+### ==========================================================================
+### @copyright
+###
+### @todo - Add the license.
+###  
+### @file                            Makefile.in
+### @author                          gauravgoel9nov@gmail.com
+### @date {File Creation Timestamp}  Sat Aug 10 20:00:39 2013
+###
+### ==========================================================================
+
+#############################################################################
+# Standard Targets
+#############################################################################
+all: \
+    create-build-dirs \
+    run-build \
+    generate-libs \
+    generate-shared-libs \
+    generate-exec
+
+test: \
+    all \
+    create-tests-build-dirs \
+    copy-tests-extra-files \
+    run-tests-build \
+    generate-tests-libs \
+    generate-tests-exec \
+    run-tests
+
+clean: \
+    delete-tests-exec \
+    delete-tests-libs \
+    delete-tests-build \
+    delete-tests-extra-files \
+    delete-exec \
+    delete-libs \
+    delete-build
+     
+distclean: \
+    clean \
+    delete-tests-build-dirs \
+    delete-build-dirs \
+    delete-extras
+
+install: \
+    all \
+    create-install-dirs \
+    install-api-headers \
+    install-libs \
+    install-bin-files \
+    install-extra-files
+
+uninstall: \
+    uninstall-extra-files \
+    uninstall-bin-files \
+    uninstall-libs \
+    uninstall-api-headers
+
+#############################################################################
+# Helping methods
+#############################################################################
+# print string with input value
+define PRINT =
+@echo $(1)
+endef
+
+# print line with input value
+define PRINTL =
+@echo $(1)
+@echo
+endef
+
+# print header with input value
+define PRINTH =
+@echo ========================================
+@echo $(1)
+@echo ========================================
+endef
+
+define SplitString =
+$(foreach curr_line,$(strip $(1)),"\n"$(curr_line))
+endef
+
+define IsDir =
+if [ -d $(1) ]; then \
+    if [ -L $(1) ]; then \
+        echo "false"; \
+    else \
+        echo "true"; \
+    fi \
+else \
+    echo "false"; \
+fi
+endef 
+
+define SearchFiles =
+$(shell find $(1) -type f) 
+endef 
+
+define SearchCPPFiles =
+$(shell find $(1) -iname '*.cpp')
+endef
+
+define SearchHeaderFiles =
+$(shell find $(1) -iname '*.h' -o -iname '*.hpp')
+endef
+
+define SearchDirs =
+$(shell find $(1) -type d)
+endef
+
+NULL :=
+SPACE := $(NULL) $(NULL)
+define ReplaceSpaceChar =
+$(subst $(SPACE),$(1),$(strip $(2)))
+endef
+
+#############################################################################
+# Configuration variables
+#############################################################################
+PROJECT_NAME = @PROJECT_NAME@
+abs_srcdir = $(abspath @abs_srcdir@)
+abs_builddir = @abs_builddir@/build
+prefix = @prefix@
+
+abs_project_dir = $(abs_srcdir)
+abs_build_dir = $(abs_builddir)
+abs_install_dir = $(prefix)
+
+AR = ar
+BASH = /bin/bash
+MKDIR_P = mkdir -p
+RM = rm -rf
+CP = cp
+CP_R = cp -r
+TOUCH = touch
+
+#############################################################################
+# Build properties files.
+#############################################################################
+include $(abs_project_dir)/build_properties.mk
+
+#############################################################################
+# Compile, linking and executing programs related configuration
+#############################################################################
+CXX := @CXX@
+INCLUDE_FLAGS := -I$(abs_build_dir)/include -I$(abs_project_dir)/include
+CPPFLAGS := @CPPFLAGS@ -fPIC -Wall -Wextra
+CXXFLAGS := @CXXFLAGS@ -std=c++11
+LDFLAGS := @LDFLAGS@
+LIBS := @LIBS@
+
+ALL_INCLUDE_FLAGS := $(INCLUDE_FLAGS) $(EXTRA_INCLUDE_FLAGS)
+ALL_CXXFLAGS := $(EXTRA_CXXFLAGS) $(CXXFLAGS)
+ALL_CPPFLAGS := $(DEFS) $(EXTRA_CPPFLAGS) $(CPPFLAGS)
+ALL_LDFLAGS := $(EXTRA_LDFLAGS) $(LDFLAGS)
+ALL_LIBS := $(LIBS) $(EXTRA_LIBS)
+
+CXX_COMPILE := \
+    $(CXX) $(ALL_CXXFLAGS) $(ALL_CPPFLAGS) $(ALL_INCLUDE_FLAGS) $(ALL_LDFLAGS)
+LINK := $(AR) $(ARFLAGS)
+SH_LINK := $(CXX) -shared -rdynamic
+
+#############################################################################
+# Build - Variables and local Targets
+#############################################################################
+PROJECT_BUILD_DIRS := $(abs_build_dir)/$(PROJECT_BUILD_OBJS_DIR)
+PROJECT_BUILD_DIRS += $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)
+PROJECT_BUILD_DIRS += $(abs_build_dir)/$(PROJECT_BUILD_BIN_DIR)
+
+PROJECT_SRCS := \
+    $(foreach curr_dir, $(PROJECT_SRC_DIRS), \
+    $(call SearchCPPFiles,"$(abs_project_dir)/$(curr_dir)"))
+
+PROJECT_BUILD_OBJS := \
+	$(foreach curr_file, $(PROJECT_SRCS), \
+    $(patsubst %.cpp,%.o,\
+    $(abs_build_dir)/$(PROJECT_BUILD_OBJS_DIR)/$(notdir $(curr_file))))
+
+PROJECT_BUILD_STATIC_LIBS := \
+    $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/lib$(PROJECT_NAME).a
+
+PROJECT_BUILD_SHARED_LIBS := \
+    $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/lib$(PROJECT_NAME).so
+
+PROJECT_BUILD_EXEC_FILES := \
+	$(foreach curr_file, $(PROJECT_EXEC_SRC_FILES), \
+    $(patsubst %.cpp,%.exe,\
+    $(abs_build_dir)/$(PROJECT_BUILD_BIN_DIR)/$(notdir $(curr_file))))
+
+PROJECT_SRCS_ABS_DIRS :=\
+    $(foreach curr_dir,$(strip $(PROJECT_SRC_DIRS)),\
+    $(abs_project_dir)/$(curr_dir))
+
+PROJECT_SRCS_ABS_DIRS +=\
+	$(foreach curr_file,$(strip $(PROJECT_EXEC_SRC_FILES)),\
+    $(abs_project_dir)/$(dir $(curr_file)))
+
+PROJECT_SRCS_VPATH :=\
+	$(call ReplaceSpaceChar,:,$(PROJECT_SRCS_ABS_DIRS))
+
+PROJECT_EXTRA_IFLAGS := \
+	$(foreach curr_dir, $(PROJECT_HEADERS_DIRS),\
+    -I$(abs_project_dir)/$(curr_dir))
+
+vpath %.cpp $(PROJECT_SRCS_VPATH)
+
+create-build-dirs:
+	$(if $(PROJECT_BUILD_DIRS),$(call PRINTH, Creating Build Directories...))
+	$(if $(PROJECT_BUILD_DIRS),$(MKDIR_P) $(PROJECT_BUILD_DIRS))
+	$(if $(PROJECT_BUILD_DIRS),$(call PRINT,""))
+
+run-build: run-build-header $(PROJECT_BUILD_OBJS)
+run-build-header:
+	$(if $(PROJECT_BUILD_OBJS),\
+    $(call PRINTH,Compiling Source Files...))
+$(abs_build_dir)/$(PROJECT_BUILD_OBJS_DIR)/%.o: %.cpp
+	$(CXX_COMPILE) $(PROJECT_EXTRA_IFLAGS) -o $@ -c $< $(ALL_LIBS)
+
+generate-libs: generate-libs-header $(PROJECT_BUILD_STATIC_LIBS)
+generate-libs-header:
+	$(if $(PROJECT_BUILD_STATIC_LIBS),\
+    $(call PRINTH,Building Static Libraries...))
+$(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/%.a: $(PROJECT_BUILD_OBJS)
+	$(LINK) $@ $^
+
+generate-shared-libs: generate-shared-libs-header $(PROJECT_BUILD_SHARED_LIBS)
+generate-shared-libs-header:
+	$(if $(PROJECT_BUILD_SHARED_LIBS),\
+    $(call PRINTH,Building Shared Libraries...))
+$(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/%.so: $(PROJECT_BUILD_OBJS)
+	$(SH_LINK) -o $@ $^ 
+
+generate-exec: generate-exec-header $(PROJECT_BUILD_EXEC_FILES)
+generate-exec-header:
+	$(if $(PROJECT_BUILD_EXEC_FILES),\
+	$(call PRINTH,Building Binary Files...))
+$(abs_build_dir)/$(PROJECT_BUILD_BIN_DIR)/%.exe: %.cpp
+	$(CXX_COMPILE) $(PROJECT_EXTRA_IFLAGS) -o $@ $< $(ALL_LIBS) \
+    $(PROJECT_BUILD_STATIC_LIBS)
+
+delete-build-dirs:
+	$(if $(PROJECT_BUILD_DIRS),$(call PRINTH, Deleting Build Directories...))
+	$(if $(PROJECT_BUILD_DIRS),$(RM) $(PROJECT_BUILD_DIRS))
+	$(if $(PROJECT_BUILD_DIRS),$(call PRINT,""))
+
+delete-build:
+	$(if $(PROJECT_BUILD_OBJS),$(call PRINTH, Deleting Build Files...))
+	$(if $(PROJECT_BUILD_OBJS),$(RM) $(PROJECT_BUILD_OBJS))
+	$(if $(PROJECT_BUILD_OBJS),$(call PRINT,""))
+
+delete-libs:
+	$(if $(PROJECT_BUILD_STATIC_LIBS)$(PROJECT_BUILD_SHARED_LIBS),\
+    $(call PRINTH, Deleting Library Files...))
+	
+	$(if $(PROJECT_BUILD_STATIC_LIBS),$(RM) $(PROJECT_BUILD_STATIC_LIBS))
+	$(if $(PROJECT_BUILD_SHARED_LIBS),$(RM) $(PROJECT_BUILD_SHARED_LIBS))
+	
+	$(if $(PROJECT_BUILD_STATIC_LIBS)$(PROJECT_BUILD_SHARED_LIBS),\
+	$(call PRINT,""))
+
+delete-exec:
+	$(if $(PROJECT_BUILD_EXEC_FILES),$(call PRINTH, Deleting Binary Files...))
+	$(if $(PROJECT_BUILD_EXEC_FILES),$(RM) $(PROJECT_BUILD_EXEC_FILES))
+	$(if $(PROJECT_BUILD_EXEC_FILES),$(call PRINT,""))
+
+delete-extras:
+	$(call PRINTH, Deleting Extra Files...)
+	$(RM) $(abs_build_dir)
+	$(RM) Makefile
+	$(RM) config.log
+	$(call PRINT,"")
+
+##############################################################################
+# Test Local Targets
+##############################################################################
+PROJECT_TESTS_BUILD_DIRS := $(abs_build_dir)/$(PROJECT_TESTS_BUILD_OBJS_DIR)
+PROJECT_TESTS_BUILD_DIRS += $(abs_build_dir)/$(PROJECT_TESTS_BUILD_LIBS_DIR)
+PROJECT_TESTS_BUILD_DIRS += $(abs_build_dir)/$(PROJECT_TESTS_BUILD_BIN_DIR)
+PROJECT_TESTS_BUILD_DIRS += \
+    $(abs_build_dir)/$(PROJECT_TESTS_BUILD_EXTRA_FILES_DIR)
+
+PROJECT_TESTS_SRCS := \
+    $(foreach curr_dir, $(PROJECT_TESTS_SRC_DIRS), \
+    $(call SearchCPPFiles,"$(abs_project_dir)/$(curr_dir)"))
+
+PROJECT_TESTS_EXEC_EXTRA_FILES := \
+    $(foreach curr_dir, $(PROJECT_TESTS_EXTRA_FILES_DIRS), \
+    $(call SearchFiles,"$(abs_project_dir)/$(curr_dir)"))
+
+PROJECT_TESTS_BUILD_OBJS := \
+	$(foreach curr_file, $(PROJECT_TESTS_SRCS), \
+    $(patsubst %.cpp,%.o,\
+    $(abs_build_dir)/$(PROJECT_TESTS_BUILD_OBJS_DIR)/$(notdir $(curr_file))))
+
+PROJECT_TESTS_BUILD_LIBS := \
+    $(abs_build_dir)/$(PROJECT_TESTS_BUILD_LIBS_DIR)/lib$(PROJECT_NAME)test.a
+
+PROJECT_TESTS_BUILD_EXEC_FILES := \
+	$(foreach curr_file, $(PROJECT_TESTS_EXEC_SRC_FILES), \
+    $(patsubst %.cpp,%.exe,\
+    $(abs_build_dir)/$(PROJECT_TESTS_BUILD_BIN_DIR)/$(notdir $(curr_file))))
+
+PROJECT_TESTS_SRCS_ABS_DIRS :=\
+    $(foreach curr_dir,$(strip $(PROJECT_TESTS_SRC_DIRS)),\
+    $(abs_project_dir)/$(curr_dir))
+
+PROJECT_TESTS_SRCS_ABS_DIRS +=\
+	$(foreach curr_file,$(strip $(PROJECT_TESTS_EXEC_SRC_FILES)),\
+    $(abs_project_dir)/$(dir $(curr_file)))
+
+PROJECT_TESTS_SRCS_VPATH :=\
+	$(call ReplaceSpaceChar,:,$(PROJECT_TESTS_SRCS_ABS_DIRS))
+
+vpath %_test.cpp $(PROJECT_TESTS_SRCS_VPATH)
+
+create-tests-build-dirs:
+	$(if $(PROJECT_TESTS_BUILD_DIRS),\
+        $(call PRINTH, Creating Build Directories...))
+	
+	$(if $(PROJECT_TESTS_BUILD_DIRS),$(MKDIR_P) $(PROJECT_TESTS_BUILD_DIRS))
+	
+	$(if $(PROJECT_TESTS_BUILD_DIRS),$(call PRINT,""))
+
+copy-tests-extra-files:
+	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),\
+        $(call PRINTH, Copying Tests Execution Extra Files...))
+	
+	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),\
+    $(foreach curr_file, $(PROJECT_TESTS_EXEC_EXTRA_FILES),\
+    $(CP_R) $(curr_file) \
+    $(abs_build_dir)/$(PROJECT_TESTS_BUILD_EXTRA_FILES_DIR)/$(notdir \
+    $(curr_file));))
+	
+	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),$(call PRINT,""))
+
+run-tests-build: \
+    run-tests-build-header $(PROJECT_BUILD_OBJS) $(PROJECT_TESTS_BUILD_OBJS)
+run-tests-build-header:
+	$(if $(PROJECT_TESTS_BUILD_OBJS),\
+    $(call PRINTH,Compiling Tests Source Files...))
+$(abs_build_dir)/$(PROJECT_TESTS_BUILD_OBJS_DIR)/%.o: %.cpp \
+    $(PROJECT_BUILD_STATIC_LIBS)
+	$(CXX_COMPILE) $(PROJECT_EXTRA_IFLAGS) -o $@ -c $<
+
+generate-tests-libs: \
+    generate-tests-libs-header $(PROJECT_BUILD_STATIC_LIBS) \
+    $(PROJECT_TESTS_BUILD_LIBS)
+generate-tests-libs-header:
+	$(if $(PROJECT_TESTS_BUILD_LIBS),\
+    $(call PRINTH,Building Tests static Libraries...))
+$(abs_build_dir)/$(PROJECT_TESTS_BUILD_LIBS_DIR)/%.a: \
+    $(PROJECT_TESTS_BUILD_OBJS)
+	$(LINK) $@ $^
+
+generate-tests-exec: \
+    generate-tests-exec-header $(PROJECT_BUILD_STATIC_LIBS) \
+    $(PROJECT_TESTS_BUILD_LIBS) $(PROJECT_TESTS_BUILD_EXEC_FILES)
+generate-tests-exec-header:
+	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),\
+	$(call PRINTH,Building Tests Binary Files...))
+$(abs_build_dir)/$(PROJECT_TESTS_BUILD_BIN_DIR)/%.exe: %.cpp
+	$(CXX_COMPILE) $(PROJECT_EXTRA_FLAGS) -o $@ $< $(EXTRA_TESTS_LIBS) \
+    $(ALL_LIBS) $(PROJECT_TESTS_BUILD_LIBS)
+    
+run-tests:
+	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),\
+        $(call PRINTH, Setting Environment Variables and Running Testcases...))
+	
+	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),\
+    export PROJECT_HOME=$(abs_build_dir); \
+    export LD_LIBRARY_PATH=$(EXTRA_LD_LIBRARY_PATH):$$LD_LIBRARY_PATH; \
+    $(BASH) -c $(PROJECT_TESTS_BUILD_EXEC_FILES))
+	
+	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),$(call PRINT,""))
+
+delete-tests-build-dirs:
+	$(if $(PROJECT_TESTS_BUILD_DIRS),\
+        $(call PRINTH, Deleting Tests Build Directories...))
+
+	$(if $(PROJECT_TESTS_BUILD_DIRS),$(RM) $(PROJECT_TESTS_BUILD_DIRS))
+	
+	$(if $(PROJECT_TESTS_BUILD_DIRS),$(call PRINT,""))
+
+delete-tests-build:
+	$(if $(PROJECT_TESTS_BUILD_OBJS),\
+        $(call PRINTH, Deleting Tests Build Files...))
+	
+	$(if $(PROJECT_TESTS_BUILD_OBJS),$(RM) $(PROJECT_TESTS_BUILD_OBJS))
+	
+	$(if $(PROJECT_TESTS_BUILD_OBJS),$(call PRINT,""))
+
+delete-tests-libs:
+	$(if $(PROJECT_TESTS_BUILD_LIBS),\
+        $(call PRINTH, Deleting Tests Library Files...))
+	
+	$(if $(PROJECT_TESTS_BUILD_LIBS),$(RM) $(PROJECT_TESTS_BUILD_LIBS))
+	
+	$(if $(PROJECT_TESTS_BUILD_LIBS),$(call PRINT,""))
+
+delete-tests-exec:
+	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),\
+        $(call PRINTH, Deleting Tests Binary Files...))
+	
+	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),\
+        $(RM) $(PROJECT_TESTS_BUILD_EXEC_FILES))
+	
+	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),$(call PRINT,""))
+
+delete-tests-extra-files:
+	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),\
+        $(call PRINTH, Deleting Tests Execution Extra Files...))
+	
+	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),\
+    $(foreach curr_file, $(PROJECT_TESTS_EXEC_EXTRA_FILES),\
+    $(RM) $(abs_build_dir)/$(PROJECT_TESTS_BUILD_EXTRA_FILES_DIR)/$(notdir \
+    $(curr_file));))
+	
+	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),$(call PRINT,""))
+
+##############################################################################
+# Install Local Targests
+##############################################################################
+PROJECT_API_HEADERS := \
+    $(foreach curr_dir,$(PROJECT_API_HEADERS_DIRS),\
+    $(call SearchHeaderFiles,$(abs_project_dir)/$(curr_dir)))
+PROJECT_INSTALL_API_HEADERS := \
+    $(foreach curr_file,$(PROJECT_API_HEADERS),$(patsubst \
+    $(abs_project_dir)/%,\
+    $(abs_install_dir)/$(strip $(PROJECT_INSTALL_API_HEADERS_DIR))/%,\
+    $(curr_file)))
+
+PROJECT_EXTRA_FILES := \
+    $(foreach curr_dir,$(PROJECT_EXTRA_FILES_DIRS),\
+    $(call SearchFiles,$(abs_project_dir)/$(curr_dir)))
+PROJECT_INSTALL_EXTRA_FILES := \
+    $(foreach curr_file,$(PROJECT_EXTRA_FILES),$(patsubst \
+    $(abs_project_dir)/%,\
+    $(abs_install_dir)/$(PROJECT_INSTALL_EXTRA_FILES_DIR)/%,$(curr_file)))
+
+PROJECT_INSTALL_DIRS += $(abs_install_dir)/$(PROJECT_INSTALL_LIBS_DIR)
+PROJECT_INSTALL_DIRS += $(abs_install_dir)/$(PROJECT_INSTALL_BIN_DIR)
+PROJECT_INSTALL_DIRS += $(dir $(PROJECT_INSTALL_API_HEADERS))
+PROJECT_INSTALL_DIRS += $(dir $(PROJECT_INSTALL_EXTRA_FILES))
+
+create-install-dirs:
+	$(if $(PROJECT_INSTALL_DIRS),$(call PRINTH,Creating Install Directories...))
+	$(if $(PROJECT_INSTALL_DIRS),$(MKDIR_P) $(PROJECT_INSTALL_DIRS))
+	$(if $(PROJECT_INSTALL_DIRS),$(call PRINT,""))
+
+install-api-headers:
+	$(if $(PROJECT_INSTALL_API_HEADERS),\
+    $(call PRINTH,Installing APIs Header Files...))
+	
+	$(if $(PROJECT_INSTALL_API_HEADERS),\
+    $(foreach curr_file,$(PROJECT_API_HEADERS), $(CP_R) $(curr_file) \
+    $(patsubst $(abs_project_dir)/%,\
+    $(abs_install_dir)/$(strip $(PROJECT_INSTALL_API_HEADERS_DIR))/%,\
+    $(curr_file));))
+	
+	$(if $(PROJECT_INSTALL_API_HEADERS),$(call PRINT,""))
+
+install-extra-files:
+	$(if $(PROJECT_INSTALL_EXTRA_FILES),\
+    $(call PRINTH,Installing Extra Files...))
+	
+	$(if $(PROJECT_INSTALL_EXTRA_FILES),\
+    $(foreach curr_file,$(PROJECT_EXTRA_FILES), $(CP_R) $(curr_file) \
+    $(patsubst $(abs_project_dir)/%,\
+    $(abs_install_dir)/$(PROJECT_INSTALL_EXTRA_FILES_DIR)/%,$(curr_file));))
+	
+	$(if $(PROJECT_INSTALL_EXTRA_FILES),$(call PRINT,""))
+
+install-libs:
+	$(if $(PROJECT_BUILD_STATIC_LIBS)$(PROJECT_BUILD_SHARED_LIBS),\
+    $(call PRINTH,Installing Libraries...))
+	
+	$(if $(PROJECT_BUILD_STATIC_LIBS), \
+	$(foreach curr_file, $(PROJECT_BUILD_STATIC_LIBS), $(CP) $(curr_file) \
+    $(patsubst $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/%,\
+    $(abs_install_dir)/$(PROJECT_INSTALL_LIBS_DIR)/%,$(curr_file));))
+	
+	$(if $(PROJECT_BUILD_SHARED_LIBS), \
+	$(foreach curr_file, $(PROJECT_BUILD_SHARED_LIBS), $(CP) $(curr_file) \
+    $(patsubst $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/%,\
+    $(abs_install_dir)/$(PROJECT_INSTALL_LIBS_DIR)/%,$(curr_file));))
+	
+	$(if $(PROJECT_BUILD_STATIC_LIBS)$(PROJECT_BUILD_SHARED_LIBS),\
+    $(call PRINT,""))
+
+install-bin-files:
+	$(if $(PROJECT_BUILD_EXEC_FILES),\
+    $(call PRINTH,Installing Binary Files...))
+
+	$(if $(PROJECT_BUILD_EXEC_FILES), \
+	$(foreach curr_file, $(PROJECT_BUILD_EXEC_FILES), $(CP) $(curr_file) \
+    $(patsubst $(abs_build_dir)/$(PROJECT_BUILD_BIN_DIR)/%,\
+    $(abs_install_dir)/$(PROJECT_INSTALL_BIN_DIR)/%,$(curr_file));))
+
+	$(if $(PROJECT_BUILD_EXEC_FILES),$(call PRINT,""))
+
+uninstall-api-headers:
+	$(if $(PROJECT_INSTALL_API_HEADERS),\
+    $(call PRINTH,Uninstalling APIs Header Files...))
+	
+	$(if $(PROJECT_INSTALL_API_HEADERS), $(RM) $(PROJECT_INSTALL_API_HEADERS))
+	
+	$(if $(PROJECT_INSTALL_API_HEADERS),$(call PRINT,""))
+
+uninstall-extra-files:
+	$(if $(PROJECT_INSTALL_EXTRA_FILES),\
+    $(call PRINTH,Uninstalling Extra Files...))
+	
+	$(if $(PROJECT_INSTALL_EXTRA_FILES), $(RM) $(PROJECT_INSTALL_EXTRA_FILES))
+	
+	$(if $(PROJECT_INSTALL_EXTRA_FILES),$(call PRINT,""))
+
+uninstall-libs:
+	$(if $(PROJECT_BUILD_STATIC_LIBS)$(PROJECT_BUILD_SHARED_LIBS),\
+    $(call PRINTH,Uninstalling Libraries...))
+	
+	$(if $(PROJECT_BUILD_STATIC_LIBS), \
+	$(foreach curr_file, $(PROJECT_BUILD_STATIC_LIBS), $(RM) \
+    $(patsubst $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/%,\
+    $(abs_install_dir)/$(PROJECT_INSTALL_LIBS_DIR)/%,$(curr_file));))
+	
+	$(if $(PROJECT_BUILD_SHARED_LIBS), \
+	$(foreach curr_file, $(PROJECT_BUILD_SHARED_LIBS), $(RM) \
+    $(patsubst $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/%,\
+    $(abs_install_dir)/$(PROJECT_INSTALL_LIBS_DIR)/%,$(curr_file));))
+	
+	$(if $(PROJECT_BUILD_STATIC_LIBS)$(PROJECT_BUILD_SHARED_LIBS),\
+    $(call PRINT,""))
+
+uninstall-bin-files:
+	$(if $(PROJECT_BUILD_EXEC_FILES),\
+    $(call PRINTH,Uninstalling Binary Files...))
+
+	$(if $(PROJECT_BUILD_EXEC_FILES), \
+	$(foreach curr_file, $(PROJECT_BUILD_EXEC_FILES), $(RM) \
+    $(patsubst $(abs_build_dir)/$(PROJECT_BUILD_BIN_DIR)/%,\
+    $(abs_install_dir)/$(PROJECT_INSTALL_BIN_DIR)/%,$(curr_file));))
+
+	$(if $(PROJECT_BUILD_EXEC_FILES),$(call PRINT,""))
+
+#############################################################################
+# Directories and files list helping variables. It uses variables defined
+# in the properties files.
+#############################################################################
+PROJECT_HEADERS := \
+    $(foreach curr_dir, $(PROJECT_HEADERS_DIRS), \
+    $(wildcard $(abs_project_dir)/$(curr_dir)/*.h))
+PROJECT_BUILD_HEADERS := \
+    $(foreach curr_file, $(PROJECT_HEADERS), \
+    $(patsubst $(abs_project_dir)/%,\
+    $(abs_build_dir)/%, $(curr_file)))
+
+
+PROJECT_EXTRA_FILES := \
+    $(foreach curr_dir, $(PROJECT_EXTRA_FILES_DIRS), \
+    $(wildcard $(abs_project_dir)/$(curr_dir)/*))
+PROJECT_BUILD_EXTRA_FILES := \
+    $(foreach curr_file, $(PROJECT_EXTRA_FILES), \
+    $(patsubst $(abs_project_dir)/%,\
+    $(abs_build_dir)/$(PROJECT_BUILD_EXTRA_FILES_DIR)/%, $(curr_file)))
+
+##############################################################################
+# Debugging Targets
+##############################################################################
+PROJECT_SOURCE_VARIABLES := \
+    abs_project_dir \
+    PROJECT_SRC_DIRS \
+    PROJECT_HEADERS_DIRS \
+    PROJECT_EXTRA_FILES_DIRS \
+    PROJECT_NAME \
+    PROJECT_SRCS \
+    PROJECT_EXTRA_FILES \
+    PROJECT_SRCS_ABS_DIRS \
+    PROJECT_SRCS_VPATH
+
+PROJECT_BUILD_VARIABLES := \
+    abs_build_dir \
+    PROJECT_BUILD_OBJS_DIR \
+    PROJECT_BUILD_LIBS_DIR \
+    PROJECT_BUILD_OBJS \
+    PROJECT_BUILD_STATIC_LIBS \
+    PROJECT_BUILD_SHARED_LIBS \
+    PROJECT_BUILD_DIRS
+
+PROJECT_TESTS_VARIABLES := \
+    PROJECT_TESTS_SRC_DIRS \
+    PROJECT_TESTS_SRCS \
+    PROJECT_TESTS_EXTRA_FILES_DIRS \
+    PROJECT_TESTS_EXEC_EXTRA_FILES \
+    PROJECT_TESTS_EXEC_SRC_FILES \
+    PROJECT_TESTS_SRCS_ABS_DIRS \
+    PROJECT_TESTS_SRCS_VPATH
+
+PROJECT_TESTS_BUILD_VARIABLES := \
+    PROJECT_TESTS_BUILD_DIRS \
+    PROJECT_TESTS_BUILD_OBJS_DIR \
+    PROJECT_TESTS_BUILD_OBJS \
+    PROJECT_TESTS_BUILD_LIBS_DIR \
+    PROJECT_TESTS_BUILD_LIBS \
+    PROJECT_TESTS_BUILD_BIN_DIR \
+    PROJECT_TESTS_BUILD_EXEC_FILES
+
+PROJECT_FLAGS_VARIABLES := \
+    ALL_CPPFLAGS ALL_CXXFLAGS ALL_LDFLAGS ALL_LIBS ALL_INCLUDES LINK
+
+PROJECT_INSTALL_VARIABLES := \
+    abs_install_dir \
+    PROJECT_INSTALL_API_HEADERS_DIR \
+    PROJECT_INSTALL_API_HEADERS \
+    PROJECT_INSTALL_EXTRA_FILES_DIR \
+    PROJECT_INSTALL_EXTRA_FILES \
+    PROJECT_INSTALL_LIBS_DIR \
+    PROJECT_INSTALL_DIRS
+
+print-vars:
+	$(call PRINTH, PROJECT SOURCES VARIABLES)	
+	$(call PRINT,\
+	$(foreach curr_var,$(PROJECT_SOURCE_VARIABLES),\
+    $(curr_var) :- $(call SplitString,$($(curr_var)))"\n\n"))
+	
+	$(call PRINTH, PROJECT BUILD VARIABLES)
+	$(call PRINT,\
+	$(foreach curr_var,$(PROJECT_BUILD_VARIABLES),\
+    $(curr_var) :- $(call SplitString,$($(curr_var)))"\n\n"))
+	
+	$(call PRINTH, PROJECT TESTS VARIABLES)
+	$(call PRINT,\
+	$(foreach curr_var,$(PROJECT_TESTS_VARIABLES),\
+    $(curr_var) :- $(call SplitString,$($(curr_var)))"\n\n"))
+	
+	$(call PRINTH, PROJECT TESTS BUILD VARIABLES)
+	$(call PRINT,\
+	$(foreach curr_var,$(PROJECT_TESTS_BUILD_VARIABLES),\
+    $(curr_var) :- $(call SplitString,$($(curr_var)))"\n\n"))
+    
+	$(call PRINTH, PROJECT BUILDING FLAGS)
+	$(call PRINT,$(foreach curr_var,$(PROJECT_FLAGS_VARIABLES),\
+    $(curr_var) :- $($(curr_var))"\n"))
+
+	$(call PRINTH, PROJECT INSTALL VARIABLES)
+	$(call PRINT,\
+	$(foreach curr_var,$(PROJECT_INSTALL_VARIABLES),\
+    $(curr_var) :- $(call SplitString,$($(curr_var)))"\n\n"))
+
+.PHONY: all install clean
