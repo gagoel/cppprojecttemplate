@@ -37,17 +37,9 @@ dnl input-file-name.in. It is here as we need to check configure input file
 dnl existence.
 dnl ========================================================================== 
 AC_CONFIG_HEADERS($PROJECT_CONFIG_HEADERS)
-AC_CONFIG_AUX_DIR($PROJECT_CONFIG_AUX_DIR)
 AC_CONFIG_SRCDIR($PROJECT_IDFILE)
 AC_CONFIG_FILES($PROJECT_CONFIG_FILES)
 
-dnl ==========================================================================
-dnl Setting default variables
-dnl ==========================================================================
-AC_PREFIX_DEFAULT(/usr/local/$PROJECT_NAME)
-if test "x$prefix" = "xNONE" ; then
-    prefix="/usr/local/"$PROJECT_NAME
-fi
 
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([Configuring $PROJECT_NAME_CAPS...])
@@ -64,8 +56,6 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CXX
 CHECK_CXX_VERSION(4.8.0)
-AC_PROG_INSTALL
-AC_PROG_MKDIR_P
 AC_PROG_LEX
 AC_PROG_LN_S
 AC_PROG_SED
@@ -73,10 +63,25 @@ AC_PROG_YACC
 AC_PATH_PROG(RM, rm)
 AC_CHECK_TOOL(RANLIB, ranlib, true)
 
-AC_CHECK_FILE($abs_srcdir/README, 
+AC_CHECK_FILE($abs_project_dir/README, 
     [AC_MSG_NOTICE([README file found.])],
     [AC_MSG_ERROR([README file not found.])]
 )
+
+dnl setting programs variables - used by make
+AC_SUBST(GREP)
+AC_SUBST(EGREP)
+AC_SUBST(FGREP)
+AC_SUBST(AWK)
+AC_SUBST(CC)
+AC_SUBST(CPP)
+AC_SUBST(CXX)
+AC_SUBST(LEX)
+AC_SUBST(LN_S)
+AC_SUBST(SED)
+AC_SUBST(YACC)
+AC_SUBST(RM)
+AC_SUBST(RANLIB)
 
 dnl ==========================================================================
 dnl Checks for libraries, headers, and functions these checks set 
@@ -134,24 +139,6 @@ dnl structures checks.
 dnl Check for the tm_gmtoff field in struct tm to get the timezone diffs
 CHECK_STRUCT_TM
 AC_STRUCT_TIMEZONE
-
-dnl ==========================================================================
-dnl Generating configuration variables
-dnl ==========================================================================
-GEN_CONFIG_VARS
-
-dnl ==========================================================================
-dnl Process command line arguments.
-dnl ==========================================================================
-
-
-dnl ==========================================================================
-dnl Setup install dirs
-dnl ==========================================================================
-dnl MKINSTALLDIRS="\$(abs_srcdir)/scripts/mkdir.sh"
-dnl INSTALL="\$(LIBTOOL) --mode=install \$(abs_srcdir)/scripts/install.sh -c"
-dnl AC_SUBST(MKINSTALLDIRS)
-dnl AC_SUBST(INSTALL)
 
 dnl ==========================================================================
 dnl It is end configuration macro, which is required.

@@ -12,7 +12,19 @@
 #############################################################################
 # Standard Targets
 #############################################################################
-all: \
+all:
+	@echo "Targets      Descriptions"
+	@echo "-------------------------"
+	@echo "build        Build all source files as per build configuration."
+	@echo "test         Build tests and execute them."
+	@echo "clean        Delete all the objects, libraries and executable files."
+	@echo "distclean    Cleanup everything."
+	@echo "install      Install libraries, executables and api headers."
+	@echo "uninstall    Uninstall all installed files."
+	@echo "dist         Generate distributable."
+
+build: \
+    build-cpplogger \
     create-build-dirs \
     run-build \
     generate-libs \
@@ -20,7 +32,8 @@ all: \
     generate-exec
 
 test: \
-    all \
+    build \
+    build-gtest \
     create-tests-build-dirs \
     copy-tests-extra-files \
     run-tests-build \
@@ -44,7 +57,7 @@ distclean: \
     delete-extras
 
 install: \
-    all \
+    build \
     create-install-dirs \
     install-api-headers \
     install-libs \
@@ -56,6 +69,8 @@ uninstall: \
     uninstall-bin-files \
     uninstall-libs \
     uninstall-api-headers
+
+dist: generate-dist
 
 #############################################################################
 # Helping methods
@@ -120,13 +135,14 @@ endef
 # Configuration variables
 #############################################################################
 PROJECT_NAME = @PROJECT_NAME@
-abs_srcdir = $(abspath @abs_srcdir@)
-abs_builddir = @abs_builddir@/build
-prefix = @prefix@
+PROJECT_VERSION = @PROJECT_VERSION@
+PROJECT_PACKAGE_NAME = @PROJECT_PACKAGE_NAME@
+PROJECT_LICENSE = @PROJECT_LICENSE@
 
-abs_project_dir = $(abs_srcdir)
-abs_build_dir = $(abs_builddir)
-abs_install_dir = $(prefix)
+abs_curr_dir = @abs_curr_dir@
+abs_project_dir = @abs_project_dir@
+abs_build_dir = @abs_build_dir@
+abs_install_dir = @abs_install_dir@
 
 AR = ar
 BASH = /bin/bash
@@ -145,7 +161,7 @@ include $(abs_project_dir)/build_properties.mk
 # Compile, linking and executing programs related configuration
 #############################################################################
 CXX := @CXX@
-INCLUDE_FLAGS := -I$(abs_build_dir)/include -I$(abs_project_dir)/include
+INCLUDE_FLAGS :=
 CPPFLAGS := @CPPFLAGS@ -fPIC -Wall -Wextra
 CXXFLAGS := @CXXFLAGS@ -std=c++11
 LDFLAGS := @LDFLAGS@
@@ -179,10 +195,12 @@ PROJECT_BUILD_OBJS := \
     $(abs_build_dir)/$(PROJECT_BUILD_OBJS_DIR)/$(notdir $(curr_file))))
 
 PROJECT_BUILD_STATIC_LIBS := \
-    $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/lib$(PROJECT_NAME).a
+    $(if $(PROJECT_BUILD_OBJS),\
+    $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/lib$(PROJECT_NAME).a)
 
 PROJECT_BUILD_SHARED_LIBS := \
-    $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/lib$(PROJECT_NAME).so
+    $(if $(PROJECT_BUILD_OBJS),\
+    $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)/lib$(PROJECT_NAME).so)
 
 PROJECT_BUILD_EXEC_FILES := \
 	$(foreach curr_file, $(PROJECT_EXEC_SRC_FILES), \
@@ -272,6 +290,14 @@ delete-extras:
 	$(RM) config.log
 	$(call PRINT,"")
 
+build-cpplogger:
+	$(call PRINTH,Configuring and Building CPPLOGGER...)
+	@$(BASH) -c "(cd $(CPPLOGGER_ROOT_DIR); $(CPPLOGGER_ROOT_DIR)/configure \
+        --prefix=$(CPPLOGGER_INSTALL_ROOT_DIR))"
+	@$(MAKE) -C $(CPPLOGGER_ROOT_DIR) -f $(CPPLOGGER_ROOT_DIR)/Makefile
+	@$(MAKE) -C $(CPPLOGGER_ROOT_DIR) -f $(CPPLOGGER_ROOT_DIR)/Makefile install
+	$(call PRINT,"")
+
 ##############################################################################
 # Test Local Targets
 ##############################################################################
@@ -295,7 +321,8 @@ PROJECT_TESTS_BUILD_OBJS := \
     $(abs_build_dir)/$(PROJECT_TESTS_BUILD_OBJS_DIR)/$(notdir $(curr_file))))
 
 PROJECT_TESTS_BUILD_LIBS := \
-    $(abs_build_dir)/$(PROJECT_TESTS_BUILD_LIBS_DIR)/lib$(PROJECT_NAME)test.a
+    $(if $(PROJECT_TESTS_BUILD_OBJS),\
+    $(abs_build_dir)/$(PROJECT_TESTS_BUILD_LIBS_DIR)/lib$(PROJECT_NAME)test.a)
 
 PROJECT_TESTS_BUILD_EXEC_FILES := \
 	$(foreach curr_file, $(PROJECT_TESTS_EXEC_SRC_FILES), \
@@ -342,7 +369,7 @@ run-tests-build-header:
     $(call PRINTH,Compiling Tests Source Files...))
 $(abs_build_dir)/$(PROJECT_TESTS_BUILD_OBJS_DIR)/%.o: %.cpp \
     $(PROJECT_BUILD_STATIC_LIBS)
-	$(CXX_COMPILE) $(PROJECT_EXTRA_IFLAGS) -o $@ -c $<
+	$(CXX_COMPILE) $(EXTRA_TESTS_IFLAGS) $(PROJECT_EXTRA_IFLAGS) -o $@ -c $<
 
 generate-tests-libs: \
     generate-tests-libs-header $(PROJECT_BUILD_STATIC_LIBS) \
@@ -361,7 +388,8 @@ generate-tests-exec-header:
 	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),\
 	$(call PRINTH,Building Tests Binary Files...))
 $(abs_build_dir)/$(PROJECT_TESTS_BUILD_BIN_DIR)/%.exe: %.cpp
-	$(CXX_COMPILE) $(PROJECT_EXTRA_FLAGS) -o $@ $< $(EXTRA_TESTS_LIBS) \
+	$(CXX_COMPILE) $(EXTRA_TESTS_IFLAGS) $(PROJECT_EXTRA_FLAGS) \
+    -o $@ $< $(EXTRA_TESTS_LIBS) \
     $(ALL_LIBS) $(PROJECT_TESTS_BUILD_LIBS)
     
 run-tests:
@@ -370,7 +398,7 @@ run-tests:
 	
 	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),\
     export PROJECT_HOME=$(abs_build_dir); \
-    export LD_LIBRARY_PATH=$(EXTRA_LD_LIBRARY_PATH):$$LD_LIBRARY_PATH; \
+    export LD_LIBRARY_PATH=$(strip $(EXTRA_LD_LIBRARY_PATH):$$LD_LIBRARY_PATH;) \
     $(BASH) -c $(PROJECT_TESTS_BUILD_EXEC_FILES))
 	
 	$(if $(PROJECT_TESTS_BUILD_EXEC_FILES),$(call PRINT,""))
@@ -418,6 +446,12 @@ delete-tests-extra-files:
     $(curr_file));))
 	
 	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),$(call PRINT,""))
+
+build-gtest:
+	$(call PRINTH,Building GTEST 'googletest'...)
+	@$(MAKE) -C $(GTEST_ROOT_DIR) \
+    -f $(GTEST_ROOT_DIR)/Makefile build
+	$(call PRINT,"")
 
 ##############################################################################
 # Install Local Targests
@@ -566,6 +600,29 @@ PROJECT_BUILD_EXTRA_FILES := \
     $(abs_build_dir)/$(PROJECT_BUILD_EXTRA_FILES_DIR)/%, $(curr_file)))
 
 ##############################################################################
+# Distributable Targets
+##############################################################################
+PROJECT_DIST_FILES := \
+	$(foreach curr_dir, $(PROJECT_DIST_DIRS),\
+    $(call SearchFiles,$(abs_project_dir)/$(curr_dir)))
+
+PROJECT_DIST_FILES_WITHOUT_BASE := \
+    $(patsubst $(abs_project_dir)/%,%,$(PROJECT_DIST_FILES))
+
+generate-dist: $(PROJECT_DIST_FILES)
+	echo $(PROJECT_PACKAGE_NAME) > .fname
+	-rm -rf $(PROJECT_PACKAGE_NAME)
+	mkdir $(PROJECT_PACKAGE_NAME)
+	
+	$(foreach curr_file, $(PROJECT_DIST_FILES_WITHOUT_BASE),\
+    test -d $(PROJECT_PACKAGE_NAME)/$(dir $(curr_file)) || \
+    mkdir -p $(PROJECT_PACKAGE_NAME)/$(dir $(curr_file)) && \
+    cp -r $(abs_project_dir)/$(curr_file) $(PROJECT_PACKAGE_NAME)/$(curr_file);)
+	
+	tar -cjvf $(PROJECT_PACKAGE_NAME).tar.bz2 $(PROJECT_PACKAGE_NAME)
+	-rm -rf $(PROJECT_PACKAGE_NAME) .fname
+
+##############################################################################
 # Debugging Targets
 ##############################################################################
 PROJECT_SOURCE_VARIABLES := \
@@ -574,10 +631,13 @@ PROJECT_SOURCE_VARIABLES := \
     PROJECT_HEADERS_DIRS \
     PROJECT_EXTRA_FILES_DIRS \
     PROJECT_NAME \
+    PROJECT_PACKAGE_NAME \
     PROJECT_SRCS \
     PROJECT_EXTRA_FILES \
     PROJECT_SRCS_ABS_DIRS \
-    PROJECT_SRCS_VPATH
+    PROJECT_SRCS_VPATH \
+    PROJECT_DIST_FILES \
+    PROJECT_DIST_FILES_WITHOUT_BASE
 
 PROJECT_BUILD_VARIABLES := \
     abs_build_dir \

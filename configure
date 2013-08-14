@@ -566,8 +566,8 @@ PACKAGE_BUGREPORT=
 PACKAGE_URL=
 
 ac_unique_file="ABOUT_CLASSLOADER"
-ac_unique_file="$PROJECT_IDFILE"
 ac_default_prefix=/usr/local/$PROJECT_NAME
+ac_unique_file="$PROJECT_IDFILE"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -607,7 +607,6 @@ ac_includes_default="\
 ac_header_list=
 ac_func_list=
 ac_subst_vars='LTLIBOBJS
-INSTALL
 LIBOBJS
 RANLIB
 RM
@@ -618,32 +617,29 @@ LN_S
 LEXLIB
 LEX_OUTPUT_ROOT
 LEX
-MKDIR_P
-INSTALL_DATA
-INSTALL_SCRIPT
-INSTALL_PROGRAM
 ac_ct_CXX
-CXXFLAGS
 CXX
 CPP
 OBJEXT
 EXEEXT
 ac_ct_CC
-CPPFLAGS
-LDFLAGS
-CFLAGS
 CC
 AWK
 FGREP
 EGREP
 GREP
-PROJECT_LOGGING_LOGS_FILE
-PROJECT_LOGGING_CONFIG_FILE
+LDFLAGS
+CXXFLAGS
+CPPFLAGS
+CFLAGS
+PROJECT_PACKAGE_NAME
 PROJECT_LICENSE
 PROJECT_VERSION
 PROJECT_NAME
-abs_builddir
-abs_srcdir
+abs_install_dir
+abs_build_dir
+abs_project_dir
+abs_curr_dir
 target_alias
 host_alias
 build_alias
@@ -685,6 +681,8 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_cpplogger_vvlogging
+with_input_value
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1304,6 +1302,19 @@ fi
 if test -n "$ac_init_help"; then
 
   cat <<\_ACEOF
+
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-cpplogger-vvlogging
+                          enable cpplogger very verbose logging. logs info and
+                          debug messages also.
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-optional-package with or without optional package setting.
 
 Some influential environment variables:
   CC          C compiler command
@@ -2359,28 +2370,52 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-abs_srcdir=`(cd $srcdir && pwd)`
-abs_builddir=`pwd`
 
-PROJECT_NAME='classloader'
-PROJECT_NAME_CAPS='CLASSLOADER'
+PROJECT_NAME='projectname'
+
+PROJECT_NAME_CAPS='PROJECTNAME'
+
+abs_current_dir=`pwd`
+
+abs_project_dir=`(cd $srcdir && pwd)`
+
+abs_build_dir=$abs_current_dir/build
+
+
+if test "x$prefix" = "xNONE" ; then
+    prefix="/usr/local/"$PROJECT_NAME
+fi
+abs_install_dir=$prefix
+
 PROJECT_VERSION='1.0.0.0b'
-PROJECT_IDFILE='ABOUT_CLASSLOADER'
+
+PROJECT_IDFILE='ABOUT_PROJECTNAME'
+
 PROJECT_LICENSE='TODO - Add project license.'
+
 PROJECT_PACKAGE_NAME="$PROJECT_NAME"-"$PROJECT_VERSION"
 
-PROJECT_CONFIG_HEADERS="$abs_srcdir/include/cpputils/classloader/config_options.h"
-PROJECT_CONFIG_AUX_DIR='scripts'
+PROJECT_CONFIG_HEADERS="$abs_project_dir/include/config_options.h"
+
 PROJECT_CONFIG_FILES='Makefile'
 
-PROJECT_BUILD_DIR="$abs_builddir/build"
+# Check whether --enable-cpplogger-vvlogging was given.
+if test "${enable_cpplogger_vvlogging+set}" = set; then :
+  enableval=$enable_cpplogger_vvlogging; \
+as_fn_append CXXFLAGS " -DCPPLOGGER_VVLOGGING"
+fi
 
-PROJECT_TESTS_BUILD_DIR="$PROJECT_BUILD_DIR/tests"
 
-PROJECT_LOGGING_CONFIG_FILE="$PROJECT_NAME"_"logging.conf"
-PROJECT_LOGGING_LOGS_FILE="$PROJECT_NAME"_"logging.log"
 
-PROJECT_INSTALL_ROOT_DIR="$prefix"
+# Check whether --with-input-value was given.
+if test "${with_input_value+set}" = set; then :
+  withval=$with_input_value; \
+your_variable_name=$with_input_value
+else
+  \
+your_variable_name=no
+fi
+
 
 
 cat >>confdefs.h <<_ACEOF
@@ -2429,38 +2464,32 @@ _ACEOF
 
 
 cat >>confdefs.h <<_ACEOF
-#define PROJECT_CONFIG_AUX_DIR "$PROJECT_CONFIG_AUX_DIR"
-_ACEOF
-
-
-cat >>confdefs.h <<_ACEOF
 #define PROJECT_CONFIG_FILES "$PROJECT_CONFIG_FILES"
 _ACEOF
 
 
-cat >>confdefs.h <<_ACEOF
-#define PROJECT_BUILD_DIR "$PROJECT_BUILD_DIR"
-_ACEOF
 
 
-cat >>confdefs.h <<_ACEOF
-#define PROJECT_TESTS_BUILD_DIR "$PROJECT_TESTS_BUILD_DIR"
-_ACEOF
 
 
-cat >>confdefs.h <<_ACEOF
-#define PROJECT_LOGGING_CONFIG_FILE "$PROJECT_LOGGING_CONFIG_FILE"
-_ACEOF
 
 
-cat >>confdefs.h <<_ACEOF
-#define PROJECT_LOGGING_LOGS_FILE "$PROJECT_LOGGING_LOGS_FILE"
-_ACEOF
 
 
-cat >>confdefs.h <<_ACEOF
-#define PROJECT_INSTALL_ROOT_DIR "$PROJECT_INSTALL_ROOT_DIR"
-_ACEOF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2490,43 +2519,10 @@ _ACEOF
 
 ac_config_headers="$ac_config_headers $PROJECT_CONFIG_HEADERS"
 
-ac_aux_dir=
-for ac_dir in $PROJECT_CONFIG_AUX_DIR "$srcdir"/$PROJECT_CONFIG_AUX_DIR; do
-  if test -f "$ac_dir/install-sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install-sh -c"
-    break
-  elif test -f "$ac_dir/install.sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install.sh -c"
-    break
-  elif test -f "$ac_dir/shtool"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/shtool install -c"
-    break
-  fi
-done
-if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in $PROJECT_CONFIG_AUX_DIR \"$srcdir\"/$PROJECT_CONFIG_AUX_DIR" "$LINENO" 5
-fi
-
-# These three variables are undocumented and unsupported,
-# and are intended to be withdrawn in a future Autoconf release.
-# They can cause serious problems if a builder's source tree is in a directory
-# whose full name contains unusual characters.
-ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
-ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
-ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
-
 
 ac_config_files="$ac_config_files $PROJECT_CONFIG_FILES"
 
 
-
-if test "x$prefix" = "xNONE" ; then
-    prefix="/usr/local/"$PROJECT_NAME
-fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
@@ -3972,141 +3968,6 @@ $as_echo "$as_me: Checking g++ version 4.8.0" >&6;}
             Your version is $your_gcc_version" "$LINENO" 5
     fi
 
-# Find a good install program.  We prefer a C program (faster),
-# so one script is as good as another.  But avoid the broken or
-# incompatible versions:
-# SysV /etc/install, /usr/sbin/install
-# SunOS /usr/etc/install
-# IRIX /sbin/install
-# AIX /bin/install
-# AmigaOS /C/install, which installs bootblocks on floppy discs
-# AIX 4 /usr/bin/installbsd, which doesn't work without a -g flag
-# AFS /usr/afsws/bin/install, which mishandles nonexistent args
-# SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
-# OS/2's system install, which has a completely different semantic
-# ./install, which can be erroneously created by make from ./install.sh.
-# Reject install programs that cannot install multiple files.
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for a BSD-compatible install" >&5
-$as_echo_n "checking for a BSD-compatible install... " >&6; }
-if test -z "$INSTALL"; then
-if ${ac_cv_path_install+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    # Account for people who put trailing slashes in PATH elements.
-case $as_dir/ in #((
-  ./ | .// | /[cC]/* | \
-  /etc/* | /usr/sbin/* | /usr/etc/* | /sbin/* | /usr/afsws/bin/* | \
-  ?:[\\/]os2[\\/]install[\\/]* | ?:[\\/]OS2[\\/]INSTALL[\\/]* | \
-  /usr/ucb/* ) ;;
-  *)
-    # OSF1 and SCO ODT 3.0 have their own names for install.
-    # Don't use installbsd from OSF since it installs stuff as root
-    # by default.
-    for ac_prog in ginstall scoinst install; do
-      for ac_exec_ext in '' $ac_executable_extensions; do
-	if { test -f "$as_dir/$ac_prog$ac_exec_ext" && $as_test_x "$as_dir/$ac_prog$ac_exec_ext"; }; then
-	  if test $ac_prog = install &&
-	    grep dspmsg "$as_dir/$ac_prog$ac_exec_ext" >/dev/null 2>&1; then
-	    # AIX install.  It has an incompatible calling convention.
-	    :
-	  elif test $ac_prog = install &&
-	    grep pwplus "$as_dir/$ac_prog$ac_exec_ext" >/dev/null 2>&1; then
-	    # program-specific install script used by HP pwplus--don't use.
-	    :
-	  else
-	    rm -rf conftest.one conftest.two conftest.dir
-	    echo one > conftest.one
-	    echo two > conftest.two
-	    mkdir conftest.dir
-	    if "$as_dir/$ac_prog$ac_exec_ext" -c conftest.one conftest.two "`pwd`/conftest.dir" &&
-	      test -s conftest.one && test -s conftest.two &&
-	      test -s conftest.dir/conftest.one &&
-	      test -s conftest.dir/conftest.two
-	    then
-	      ac_cv_path_install="$as_dir/$ac_prog$ac_exec_ext -c"
-	      break 3
-	    fi
-	  fi
-	fi
-      done
-    done
-    ;;
-esac
-
-  done
-IFS=$as_save_IFS
-
-rm -rf conftest.one conftest.two conftest.dir
-
-fi
-  if test "${ac_cv_path_install+set}" = set; then
-    INSTALL=$ac_cv_path_install
-  else
-    # As a last resort, use the slow shell script.  Don't cache a
-    # value for INSTALL within a source directory, because that will
-    # break other packages using the cache if that directory is
-    # removed, or if the value is a relative name.
-    INSTALL=$ac_install_sh
-  fi
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $INSTALL" >&5
-$as_echo "$INSTALL" >&6; }
-
-# Use test -z because SunOS4 sh mishandles braces in ${var-val}.
-# It thinks the first close brace ends the variable substitution.
-test -z "$INSTALL_PROGRAM" && INSTALL_PROGRAM='${INSTALL}'
-
-test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
-
-test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for a thread-safe mkdir -p" >&5
-$as_echo_n "checking for a thread-safe mkdir -p... " >&6; }
-if test -z "$MKDIR_P"; then
-  if ${ac_cv_path_mkdir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH$PATH_SEPARATOR/opt/sfw/bin
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_prog in mkdir gmkdir; do
-	 for ac_exec_ext in '' $ac_executable_extensions; do
-	   { test -f "$as_dir/$ac_prog$ac_exec_ext" && $as_test_x "$as_dir/$ac_prog$ac_exec_ext"; } || continue
-	   case `"$as_dir/$ac_prog$ac_exec_ext" --version 2>&1` in #(
-	     'mkdir (GNU coreutils) '* | \
-	     'mkdir (coreutils) '* | \
-	     'mkdir (fileutils) '4.1*)
-	       ac_cv_path_mkdir=$as_dir/$ac_prog$ac_exec_ext
-	       break 3;;
-	   esac
-	 done
-       done
-  done
-IFS=$as_save_IFS
-
-fi
-
-  test -d ./--version && rmdir ./--version
-  if test "${ac_cv_path_mkdir+set}" = set; then
-    MKDIR_P="$ac_cv_path_mkdir -p"
-  else
-    # As a last resort, use the slow shell script.  Don't cache a
-    # value for MKDIR_P within a source directory, because that will
-    # break other packages using the cache if that directory is
-    # removed, or if the value is a relative name.
-    MKDIR_P="$ac_install_sh -d"
-  fi
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $MKDIR_P" >&5
-$as_echo "$MKDIR_P" >&6; }
-
 
 for ac_prog in flex lex
 do
@@ -4522,15 +4383,15 @@ else
 fi
 
 
-as_ac_File=`$as_echo "ac_cv_file_$abs_srcdir/README" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $abs_srcdir/README" >&5
-$as_echo_n "checking for $abs_srcdir/README... " >&6; }
+as_ac_File=`$as_echo "ac_cv_file_$abs_project_dir/README" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $abs_project_dir/README" >&5
+$as_echo_n "checking for $abs_project_dir/README... " >&6; }
 if eval \${$as_ac_File+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   test "$cross_compiling" = yes &&
   as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$abs_srcdir/README"; then
+if test -r "$abs_project_dir/README"; then
   eval "$as_ac_File=yes"
 else
   eval "$as_ac_File=no"
@@ -4546,6 +4407,20 @@ else
   as_fn_error $? "README file not found." "$LINENO" 5
 
 fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -5635,54 +5510,6 @@ $as_echo "#define HAVE_TZNAME 1" >>confdefs.h
 fi
 
 
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Generating configuration variables..." >&5
-$as_echo "$as_me: Generating configuration variables..." >&6;}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -6273,8 +6100,6 @@ gives unlimited permission to copy, distribute and modify it."
 
 ac_pwd='$ac_pwd'
 srcdir='$srcdir'
-INSTALL='$INSTALL'
-MKDIR_P='$MKDIR_P'
 AWK='$AWK'
 test -n "\$AWK" || AWK=awk
 _ACEOF
@@ -6832,15 +6657,6 @@ ac_abs_srcdir=$ac_abs_top_srcdir$ac_dir_suffix
   # CONFIG_FILE
   #
 
-  case $INSTALL in
-  [\\/$]* | ?:[\\/]* ) ac_INSTALL=$INSTALL ;;
-  *) ac_INSTALL=$ac_top_build_prefix$INSTALL ;;
-  esac
-  ac_MKDIR_P=$MKDIR_P
-  case $MKDIR_P in
-  [\\/$]* | ?:[\\/]* ) ;;
-  */*) ac_MKDIR_P=$ac_top_build_prefix$MKDIR_P ;;
-  esac
 _ACEOF
 
 cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
@@ -6894,8 +6710,6 @@ s&@abs_top_srcdir@&$ac_abs_top_srcdir&;t t
 s&@builddir@&$ac_builddir&;t t
 s&@abs_builddir@&$ac_abs_builddir&;t t
 s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
-s&@INSTALL@&$ac_INSTALL&;t t
-s&@MKDIR_P@&$ac_MKDIR_P&;t t
 $ac_datarootdir_hack
 "
 eval sed \"\$ac_sed_extra\" "$ac_file_inputs" | $AWK -f "$ac_tmp/subs.awk" \

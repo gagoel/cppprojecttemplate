@@ -37,12 +37,19 @@
 #
 # PROJECT_EXTRA_FILES_DIRS - all files inside these directories will
 # be install.
+#
+# PROJECT_DIST_DIRS - directories which needs to be part of distributable.
+# file searches are recursive in these directories.
 #############################################################################
 PROJECT_SRC_DIRS = src 
 PROJECT_HEADERS_DIRS = include
 PROJECT_EXEC_SRC_FILES =
 PROJECT_API_HEADERS_DIRS = include
 PROJECT_EXTRA_FILES_DIRS = config logs
+PROJECT_DIST_DIRS = config examples include src tests logs external \
+ABOUT_PROJECTNAME acinclude.m4 build_properties.mk config_properties.m4 \
+configure configure.ac DEV-README INSTALL Makefile.in QUESTION_ANSWER README \
+TODO
 
 #############################################################################
 # Project tests source directories structure. 
@@ -101,10 +108,31 @@ PROJECT_INSTALL_EXTRA_FILES_DIR = share/$(PROJECT_NAME)
 # INCLUDE_FLAGS - all project headers top directories entries
 # LDFLAGS -
 #############################################################################
-EXTRA_INCLUDE_FLAGS := -I/home/gagoel/gagoel_ggpw/tools/include
+#EXTRA_INCLUDE_FLAGS := -I/home/gagoel/gagoel_ggpw/tools/include
+#EXTRA_CPPFLAGS := 
+#EXTRA_CXXFLAGS := 
+#EXTRA_LDFLAGS := -L/home/gagoel/gagoel_ggpw/tools/lib
+#EXTRA_LIBS := -lcurl -lcpplogger -ldl
+#EXTRA_TESTS_LIBS := /home/gagoel/gagoel_ggpw/tools/lib/gtest.a
+#EXTRA_LD_LIBRARY_PATH := /home/gagoel/gagoel_ggpw/tools/lib
+
+EXTRA_INCLUDE_FLAGS := 
 EXTRA_CPPFLAGS := 
 EXTRA_CXXFLAGS := 
-EXTRA_LDFLAGS := -L/home/gagoel/gagoel_ggpw/tools/lib
-EXTRA_LIBS := -lcurl -lcpplogger -ldl
-EXTRA_TESTS_LIBS := /home/gagoel/gagoel_ggpw/tools/lib/gtest.a
-EXTRA_LD_LIBRARY_PATH := /home/gagoel/gagoel_ggpw/tools/lib
+EXTRA_LDFLAGS :=
+EXTRA_LIBS := -lcurl -ldl
+EXTRA_LD_LIBRARY_PATH :=
+
+##############################################################################
+# External packages configuration variables.
+##############################################################################
+GTEST_ROOT_DIR := $(abs_project_dir)/external/gtest
+EXTRA_TESTS_IFLAGS := -I$(GTEST_ROOT_DIR)/include -I$(GTEST_ROOT_DIR)/include/gtest
+EXTRA_TESTS_LIBS := $(GTEST_ROOT_DIR)/build/objs/gtest-all.o
+
+CPPLOGGER_ROOT_DIR := $(abs_project_dir)/external/cpplogger
+CPPLOGGER_INSTALL_ROOT_DIR := $(CPPLOGGER_ROOT_DIR)/install
+EXTRA_LIBS += -lcpplogger
+EXTRA_LDFLAGS += -L$(CPPLOGGER_INSTALL_ROOT_DIR)/lib
+EXTRA_LD_LIBRARY_PATH += $(CPPLOGGER_INSTALL_ROOT_DIR)/lib
+EXTRA_INCLUDE_FLAGS += -I$(CPPLOGGER_INSTALL_ROOT_DIR)/include

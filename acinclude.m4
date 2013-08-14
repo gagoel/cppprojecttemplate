@@ -10,10 +10,12 @@ dnl @date {File Creation Timestamp}   Sat May 16 20:00:39 2013
 dnl
 dnl ==========================================================================
 
+dnl ==========================================================================
+dnl This file contains the autoconf helping function which can be used in
+dnl configure.ac file.
+dnl ==========================================================================
 
-dnl ==========================================================================
-dnl Checks Programs and version functions.
-dnl ==========================================================================
+dnl Checks g++ version.
 AC_DEFUN([CHECK_CXX_VERSION], [
     
     AC_MSG_NOTICE([Checking g++ version $1])
@@ -28,61 +30,7 @@ AC_DEFUN([CHECK_CXX_VERSION], [
     fi
 ])
 
-dnl ==========================================================================
-dnl APACHE_GEN_CONFIG_VARS
-dnl Creates config_vars.mk
-dnl ==========================================================================
-AC_DEFUN([GEN_CONFIG_VARS],[
-  AC_MSG_NOTICE([Generating configuration variables...])
-
-  dnl compilation flags
-  AC_SUBST(CFLAGS)
-  AC_SUBST(CPPFLAGS)
-  AC_SUBST(CXXFLAGS)
-  AC_SUBST(LDFLAGS)
-  AC_SUBST(LIBS)
-
-  dnl installation directories.
-  AC_SUBST(bindir)
-  AC_SUBST(datadir)
-  AC_SUBST(datarootdir)
-  AC_SUBST(exec_prefix)
-  AC_SUBST(htmldir)
-  AC_SUBST(includedir)
-  AC_SUBST(infodir)
-  AC_SUBST(libdir)
-  AC_SUBST(libexecdir)
-  AC_SUBST(localedir)
-  AC_SUBST(localstatedir)
-  AC_SUBST(mandir)
-  AC_SUBST(pdfdir)
-  AC_SUBST(prefix)
-  AC_SUBST(sbindir)
-  AC_SUBST(sharedstatedir)
-  AC_SUBST(sysconfdir)
-
-  dnl programs variables
-  AC_SUBST(GREP)
-  AC_SUBST(EGREP)
-  AC_SUBST(FGREP)
-  AC_SUBST(AWK)
-  AC_SUBST(CC)
-  AC_SUBST(CPP)
-  AC_SUBST(CXX)
-  AC_SUBST(INSTALL)
-  AC_SUBST(MKDIR_P)
-  AC_SUBST(LEX)
-  AC_SUBST(LN_S)
-  AC_SUBST(SED)
-  AC_SUBST(YACC)
-  AC_SUBST(RM)
-  AC_SUBST(RANLIB)
-])
-
-
-dnl ==========================================================================
-dnl Checks struct functionality functions. 
-dnl ==========================================================================
+dnl Checks tm struct functionality. 
 AC_DEFUN([CHECK_STRUCT_TM],
     [AC_CACHE_CHECK(
         [for tm_gmtoff in struct tm], 
@@ -100,6 +48,7 @@ AC_DEFUN([CHECK_STRUCT_TM],
     ]
 )
 
+dnl Checks void pointer length.
 AC_DEFUN([CHECK_VOID_PTR_LEN], [
     AC_CACHE_CHECK(
         [for void pointer length], 
@@ -119,9 +68,7 @@ AC_DEFUN([CHECK_VOID_PTR_LEN], [
     fi
 ])
 
-dnl ==========================================================================
-dnl Checks function availability functions.
-dnl ==========================================================================
+dnl Checks gettid function availability.
 AC_DEFUN([CHECK_FUNC_GETTID],[
     AC_CACHE_CHECK(
         [for gettid()], 
