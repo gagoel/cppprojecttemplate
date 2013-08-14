@@ -25,7 +25,7 @@
 #ifndef CPPUTILS_CPPLOGGER_HANDLER_H_
 #define CPPUTILS_CPPLOGGER_HANDLER_H_
 
-#include "cpplogger/cpplogger_config.h"
+#include "cpputils/cpplogger/cpplogger_config.h"
 
 // Handler registers handler by using preprocessor CPPLOGGER_DECLARE_HANDLER
 // Example -

@@ -203,10 +203,10 @@ can cause unusual behaviour.
 #include <exception>
 #include <string>
 
-#include "cpplogger/cpplogger_logging.h"
-#include "cpplogger/cpplogger_utils.h"
-#include "cpplogger/cpplogger_config.h"
-#include "cpplogger/cpplogger_output.h"
+#include "cpputils/cpplogger/cpplogger_logging.h"
+#include "cpputils/cpplogger/cpplogger_utils.h"
+#include "cpputils/cpplogger/cpplogger_config.h"
+#include "cpputils/cpplogger/cpplogger_output.h"
 
 namespace cpputils { namespace cpplogger {
 

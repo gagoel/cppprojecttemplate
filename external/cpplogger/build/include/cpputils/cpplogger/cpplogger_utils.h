@@ -22,7 +22,7 @@
 #ifndef CPPUTILS_CPPLOGGER_UTILS_H_
 #define CPPUTILS_CPPLOGGER_UTILS_H_
 
-#include "cpplogger/cpplogger_logging.h"
+#include "cpputils/cpplogger/cpplogger_logging.h"
 
 namespace cpputils
 {

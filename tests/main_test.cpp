@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "cpplogger/cpplogger.h"
+#include "cpputils/cpplogger/cpplogger.h"
 
 class ClassLoaderTestEnvironment : public ::testing::Environment 
 {
