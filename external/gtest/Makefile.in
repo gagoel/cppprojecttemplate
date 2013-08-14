@@ -4,11 +4,12 @@
 ##############################################################################
 
 # Variables
-abs_curr_dir = $(abspath .)
-abs_project_dir = $(abs_curr_dir)
+abs_curr_dir = $(abspath @abs_curr_dir@)
+abs_project_dir = $(abspath @abs_project_dir@)
+abs_build_dir = $(abspath @abs_build_dir@)
+abs_install_dir = $(abspath @abs_install_dir@)
 abs_src_dir = $(abs_project_dir)/src
-abs_build_dir = $(abs_project_dir)/build
-abs_install_dir = $(abs_project_dir)/install
+
 
 GTEST_SRCS := $(wildcard $(abs_src_dir)/*.cc)
 

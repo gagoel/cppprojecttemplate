@@ -108,15 +108,7 @@ PROJECT_INSTALL_EXTRA_FILES_DIR = share/$(PROJECT_NAME)
 # INCLUDE_FLAGS - all project headers top directories entries
 # LDFLAGS -
 #############################################################################
-#EXTRA_INCLUDE_FLAGS := -I/home/gagoel/gagoel_ggpw/tools/include
-#EXTRA_CPPFLAGS := 
-#EXTRA_CXXFLAGS := 
-#EXTRA_LDFLAGS := -L/home/gagoel/gagoel_ggpw/tools/lib
-#EXTRA_LIBS := -lcurl -lcpplogger -ldl
-#EXTRA_TESTS_LIBS := /home/gagoel/gagoel_ggpw/tools/lib/gtest.a
-#EXTRA_LD_LIBRARY_PATH := /home/gagoel/gagoel_ggpw/tools/lib
-
-EXTRA_INCLUDE_FLAGS := 
+EXTRA_INCLUDE_FLAGS :=
 EXTRA_CPPFLAGS := 
 EXTRA_CXXFLAGS := 
 EXTRA_LDFLAGS :=
@@ -124,15 +116,34 @@ EXTRA_LIBS := -lcurl -ldl
 EXTRA_LD_LIBRARY_PATH :=
 
 ##############################################################################
-# External packages configuration variables.
+# External tests packages configuration variables.
+#
+# EXTERNAL_TESTS_PACKAGES - test packages name, all build files for the package
+# will go in $(abs_external_build_dir)/$PACKAGE_NAME
 ##############################################################################
-GTEST_ROOT_DIR := $(abs_project_dir)/external/gtest
-EXTRA_TESTS_IFLAGS := -I$(GTEST_ROOT_DIR)/include -I$(GTEST_ROOT_DIR)/include/gtest
-EXTRA_TESTS_LIBS := $(GTEST_ROOT_DIR)/build/objs/gtest-all.o
+# Packages for testing only.
+EXTERNAL_TESTS_PACKAGES = gtest
 
-CPPLOGGER_ROOT_DIR := $(abs_project_dir)/external/cpplogger
-CPPLOGGER_INSTALL_ROOT_DIR := $(CPPLOGGER_ROOT_DIR)/install
+GTEST_ROOT_DIR := $(abs_external_project_dir)/gtest
+GTEST_BUILD_DIR := $(abs_external_build_dir)/gtest
+
+EXTRA_TESTS_IFLAGS := -I$(GTEST_ROOT_DIR)/include -I$(GTEST_ROOT_DIR)/include/gtest
+EXTRA_TESTS_LIBS := $(GTEST_BUILD_DIR)/build/libs/gtest.a
+
+##############################################################################
+# External packages configuration variables, project sub packages. 
+# These packages libraries and executable will also installed.
+#
+# EXTERNAL_PACKAGES - packages name, all build files for the package
+# will go in $(abs_external_build_dir)/$PACKAGE_NAME
+##############################################################################
+EXTERNAL_PACKAGES = cpplogger
+
+CPPLOGGER_ROOT_DIR := $(abs_external_project_dir)/cpplogger
+CPPLOGGER_BUILD_DIR := $(abs_external_build_dir)/cpplogger
+
+CPPLOGGER_BUILD_LIBS_DIR := $(abs_external_build_dir)/cpplogger/build/libs/cpplogger
 EXTRA_LIBS += -lcpplogger
-EXTRA_LDFLAGS += -L$(CPPLOGGER_INSTALL_ROOT_DIR)/lib
-EXTRA_LD_LIBRARY_PATH += $(CPPLOGGER_INSTALL_ROOT_DIR)/lib
-EXTRA_INCLUDE_FLAGS += -I$(CPPLOGGER_INSTALL_ROOT_DIR)/include
+EXTRA_LD_LIBRARY_PATH += $(CPPLOGGER_BUILD_LIBS_DIR)
+EXTRA_LDFLAGS += -L$(CPPLOGGER_BUILD_LIBS_DIR)
+EXTRA_INCLUDE_FLAGS += -I$(CPPLOGGER_ROOT_DIR)/include

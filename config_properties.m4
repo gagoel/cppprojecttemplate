@@ -29,9 +29,15 @@ dnl Project sources top directory. This is the reference directory for all
 dnl file searches while building, installing and packaging.
 abs_project_dir=`(cd $srcdir && pwd)`
 
+dnl External Projects top directory.
+abs_external_project_dir=$abs_project_dir/external
+
 dnl Project build top directory. This is the reference directory for all build
 dnl directories.
 abs_build_dir=$abs_current_dir/build
+
+dnl External Projects build top directory.
+abs_external_build_dir=$abs_build_dir/external
 
 dnl ==========================================================================
 dnl Project install top directory. This is the reference directory for all 
@@ -115,7 +121,9 @@ dnl ==========================================================================
 dnl project configuration related variables.
 AC_SUBST(abs_curr_dir)
 AC_SUBST(abs_project_dir)
+AC_SUBST(abs_external_project_dir)
 AC_SUBST(abs_build_dir)
+AC_SUBST(abs_external_build_dir)
 AC_SUBST(abs_install_dir)
 AC_SUBST(PROJECT_NAME)
 AC_SUBST(PROJECT_VERSION)

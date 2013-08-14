@@ -637,7 +637,9 @@ PROJECT_LICENSE
 PROJECT_VERSION
 PROJECT_NAME
 abs_install_dir
+abs_external_build_dir
 abs_build_dir
+abs_external_project_dir
 abs_project_dir
 abs_curr_dir
 target_alias
@@ -2379,7 +2381,11 @@ abs_current_dir=`pwd`
 
 abs_project_dir=`(cd $srcdir && pwd)`
 
+abs_external_project_dir=$abs_project_dir/external
+
 abs_build_dir=$abs_current_dir/build
+
+abs_external_build_dir=$abs_build_dir/external
 
 
 if test "x$prefix" = "xNONE" ; then
@@ -2466,6 +2472,8 @@ _ACEOF
 cat >>confdefs.h <<_ACEOF
 @%:@define PROJECT_CONFIG_FILES "$PROJECT_CONFIG_FILES"
 _ACEOF
+
+
 
 
 

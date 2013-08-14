@@ -24,8 +24,8 @@ all:
 	@echo "dist         Generate distributable."
 
 build: \
-    build-cpplogger \
     create-build-dirs \
+    build-external \
     run-build \
     generate-libs \
     generate-shared-libs \
@@ -33,8 +33,8 @@ build: \
 
 test: \
     build \
-    build-gtest \
     create-tests-build-dirs \
+    build-tests-external \
     copy-tests-extra-files \
     run-tests-build \
     generate-tests-libs \
@@ -59,6 +59,7 @@ distclean: \
 install: \
     build \
     create-install-dirs \
+    install-external \
     install-api-headers \
     install-libs \
     install-bin-files \
@@ -143,6 +144,8 @@ abs_curr_dir = @abs_curr_dir@
 abs_project_dir = @abs_project_dir@
 abs_build_dir = @abs_build_dir@
 abs_install_dir = @abs_install_dir@
+abs_external_build_dir = @abs_external_build_dir@
+abs_external_project_dir = @abs_external_project_dir@
 
 AR = ar
 BASH = /bin/bash
@@ -184,6 +187,8 @@ SH_LINK := $(CXX) -shared -rdynamic
 PROJECT_BUILD_DIRS := $(abs_build_dir)/$(PROJECT_BUILD_OBJS_DIR)
 PROJECT_BUILD_DIRS += $(abs_build_dir)/$(PROJECT_BUILD_LIBS_DIR)
 PROJECT_BUILD_DIRS += $(abs_build_dir)/$(PROJECT_BUILD_BIN_DIR)
+PROJECT_BUILD_DIRS += $(foreach curr_name, $(EXTERNAL_PACKAGES),\
+    $(abs_external_build_dir)/$(strip $(curr_name)))
 
 PROJECT_SRCS := \
     $(foreach curr_dir, $(PROJECT_SRC_DIRS), \
@@ -290,12 +295,13 @@ delete-extras:
 	$(RM) config.log
 	$(call PRINT,"")
 
+build-external: build-cpplogger
+
 build-cpplogger:
 	$(call PRINTH,Configuring and Building CPPLOGGER...)
-	@$(BASH) -c "(cd $(CPPLOGGER_ROOT_DIR); $(CPPLOGGER_ROOT_DIR)/configure \
-        --prefix=$(CPPLOGGER_INSTALL_ROOT_DIR))"
-	@$(MAKE) -C $(CPPLOGGER_ROOT_DIR) -f $(CPPLOGGER_ROOT_DIR)/Makefile
-	@$(MAKE) -C $(CPPLOGGER_ROOT_DIR) -f $(CPPLOGGER_ROOT_DIR)/Makefile install
+	@$(BASH) -c "(cd $(CPPLOGGER_BUILD_DIR); $(CPPLOGGER_ROOT_DIR)/configure \
+        --prefix=$(abs_install_dir))"
+	@$(MAKE) -C $(CPPLOGGER_BUILD_DIR) -f $(CPPLOGGER_BUILD_DIR)/Makefile
 	$(call PRINT,"")
 
 ##############################################################################
@@ -306,6 +312,8 @@ PROJECT_TESTS_BUILD_DIRS += $(abs_build_dir)/$(PROJECT_TESTS_BUILD_LIBS_DIR)
 PROJECT_TESTS_BUILD_DIRS += $(abs_build_dir)/$(PROJECT_TESTS_BUILD_BIN_DIR)
 PROJECT_TESTS_BUILD_DIRS += \
     $(abs_build_dir)/$(PROJECT_TESTS_BUILD_EXTRA_FILES_DIR)
+PROJECT_TESTS_BUILD_DIRS += $(foreach curr_name, $(EXTERNAL_TESTS_PACKAGES),\
+    $(abs_external_build_dir)/$(strip $(curr_name)))
 
 PROJECT_TESTS_SRCS := \
     $(foreach curr_dir, $(PROJECT_TESTS_SRC_DIRS), \
@@ -344,7 +352,7 @@ vpath %_test.cpp $(PROJECT_TESTS_SRCS_VPATH)
 
 create-tests-build-dirs:
 	$(if $(PROJECT_TESTS_BUILD_DIRS),\
-        $(call PRINTH, Creating Build Directories...))
+        $(call PRINTH, Creating Tests Build Directories...))
 	
 	$(if $(PROJECT_TESTS_BUILD_DIRS),$(MKDIR_P) $(PROJECT_TESTS_BUILD_DIRS))
 	
@@ -447,10 +455,12 @@ delete-tests-extra-files:
 	
 	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),$(call PRINT,""))
 
+build-tests-external: build-gtest
+
 build-gtest:
 	$(call PRINTH,Building GTEST 'googletest'...)
-	@$(MAKE) -C $(GTEST_ROOT_DIR) \
-    -f $(GTEST_ROOT_DIR)/Makefile build
+	@$(BASH) -c "(cd $(GTEST_BUILD_DIR); $(GTEST_ROOT_DIR)/configure)"
+	@$(MAKE) -C $(GTEST_BUILD_DIR) -f $(GTEST_BUILD_DIR)/Makefile build
 	$(call PRINT,"")
 
 ##############################################################################
@@ -578,26 +588,12 @@ uninstall-bin-files:
 
 	$(if $(PROJECT_BUILD_EXEC_FILES),$(call PRINT,""))
 
-#############################################################################
-# Directories and files list helping variables. It uses variables defined
-# in the properties files.
-#############################################################################
-PROJECT_HEADERS := \
-    $(foreach curr_dir, $(PROJECT_HEADERS_DIRS), \
-    $(wildcard $(abs_project_dir)/$(curr_dir)/*.h))
-PROJECT_BUILD_HEADERS := \
-    $(foreach curr_file, $(PROJECT_HEADERS), \
-    $(patsubst $(abs_project_dir)/%,\
-    $(abs_build_dir)/%, $(curr_file)))
+install-external: install-cpplogger
 
-
-PROJECT_EXTRA_FILES := \
-    $(foreach curr_dir, $(PROJECT_EXTRA_FILES_DIRS), \
-    $(wildcard $(abs_project_dir)/$(curr_dir)/*))
-PROJECT_BUILD_EXTRA_FILES := \
-    $(foreach curr_file, $(PROJECT_EXTRA_FILES), \
-    $(patsubst $(abs_project_dir)/%,\
-    $(abs_build_dir)/$(PROJECT_BUILD_EXTRA_FILES_DIR)/%, $(curr_file)))
+install-cpplogger:
+	$(call PRINTH,Installing CPPLOGGER...)
+	@$(MAKE) -C $(CPPLOGGER_BUILD_DIR) -f $(CPPLOGGER_BUILD_DIR)/Makefile install
+	$(call PRINT,"")
 
 ##############################################################################
 # Distributable Targets
