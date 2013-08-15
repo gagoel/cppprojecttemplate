@@ -229,10 +229,11 @@ PROJECT_EXTRA_IFLAGS := \
 
 vpath %.cpp $(PROJECT_SRCS_VPATH)
 
-create-build-dirs:
+$(PROJECT_BUILD_DIRS):
 	$(if $(PROJECT_BUILD_DIRS),$(call PRINTH, Creating Build Directories...))
 	$(if $(PROJECT_BUILD_DIRS),$(MKDIR_P) $(PROJECT_BUILD_DIRS))
 	$(if $(PROJECT_BUILD_DIRS),$(call PRINT,""))
+create-build-dirs: $(PROJECT_BUILD_DIRS)
 
 run-build: run-build-header $(PROJECT_BUILD_OBJS)
 run-build-header:
@@ -297,12 +298,22 @@ delete-extras:
 
 build-external: build-cpplogger
 
-build-cpplogger:
-	$(call PRINTH,Configuring and Building CPPLOGGER...)
+$(CPPLOGGER_ROOT_DIR)/Makefile.in $(CPPLOGGER_BUILD_DIR)/Makefile:
+	$(call PRINTH,Configuring CPPLOGGER...)
 	@$(BASH) -c "(cd $(CPPLOGGER_BUILD_DIR); $(CPPLOGGER_ROOT_DIR)/configure \
         --prefix=$(abs_install_dir))"
+	$(call PRINT,"")
+
+$(CPPLOGGER_BUILD_DIR)/build/libs/cpplogger/libcpplogger.a \
+    $(CPPLOGGER_BUILD_DIR)/build/libs/cpplogger/libcpplogger.so: \
+    $(CPPLOGGER_ROOT_DIR)/Makefile.in $(CPPLOGGER_BUILD_DIR)/Makefile
+	$(call PRINTH,Building CPPLOGGER...)
 	@$(MAKE) -C $(CPPLOGGER_BUILD_DIR) -f $(CPPLOGGER_BUILD_DIR)/Makefile
 	$(call PRINT,"")
+
+build-cpplogger: \
+    $(CPPLOGGER_BUILD_DIR)/build/libs/cpplogger/libcpplogger.a \
+    $(CPPLOGGER_BUILD_DIR)/build/libs/cpplogger/libcpplogger.so
 
 ##############################################################################
 # Test Local Targets
@@ -322,6 +333,10 @@ PROJECT_TESTS_SRCS := \
 PROJECT_TESTS_EXEC_EXTRA_FILES := \
     $(foreach curr_dir, $(PROJECT_TESTS_EXTRA_FILES_DIRS), \
     $(call SearchFiles,"$(abs_project_dir)/$(curr_dir)"))
+PROJECT_TESTS_BUILD_EXEC_EXTRA_FILES := \
+    $(foreach curr_file, $(PROJECT_TESTS_EXEC_EXTRA_FILES), \
+    $(abs_build_dir)/$(PROJECT_TESTS_BUILD_EXTRA_FILES_DIR)/$(notdir \
+    $(curr_file)))
 
 PROJECT_TESTS_BUILD_OBJS := \
 	$(foreach curr_file, $(PROJECT_TESTS_SRCS), \
@@ -350,15 +365,16 @@ PROJECT_TESTS_SRCS_VPATH :=\
 
 vpath %_test.cpp $(PROJECT_TESTS_SRCS_VPATH)
 
-create-tests-build-dirs:
+$(PROJECT_TESTS_BUILD_DIRS):
 	$(if $(PROJECT_TESTS_BUILD_DIRS),\
         $(call PRINTH, Creating Tests Build Directories...))
 	
 	$(if $(PROJECT_TESTS_BUILD_DIRS),$(MKDIR_P) $(PROJECT_TESTS_BUILD_DIRS))
 	
 	$(if $(PROJECT_TESTS_BUILD_DIRS),$(call PRINT,""))
+create-tests-build-dirs: $(PROJECT_TESTS_BUILD_DIRS)
 
-copy-tests-extra-files:
+$(PROJECT_TESTS_BUILD_EXEC_EXTRA_FILES):
 	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),\
         $(call PRINTH, Copying Tests Execution Extra Files...))
 	
@@ -369,6 +385,7 @@ copy-tests-extra-files:
     $(curr_file));))
 	
 	$(if $(PROJECT_TESTS_EXEC_EXTRA_FILES),$(call PRINT,""))
+copy-tests-extra-files: $(PROJECT_TESTS_BUILD_EXEC_EXTRA_FILES)
 
 run-tests-build: \
     run-tests-build-header $(PROJECT_BUILD_OBJS) $(PROJECT_TESTS_BUILD_OBJS)
@@ -457,12 +474,18 @@ delete-tests-extra-files:
 
 build-tests-external: build-gtest
 
-build-gtest:
-	$(call PRINTH,Building GTEST 'googletest'...)
+$(GTEST_ROOT_DIR)/Makefile.in $(GTEST_BUILD_DIR)/Makefile:
+	$(call PRINTH,Configuring GTEST 'googletest'...)
 	@$(BASH) -c "(cd $(GTEST_BUILD_DIR); $(GTEST_ROOT_DIR)/configure)"
+	$(call PRINT,"")
+
+$(GTEST_BUILD_DIR)/build/libs/gtest.a: \
+    $(GTEST_ROOT_DIR)/Makefile.in $(GTEST_BUILD_DIR)/Makefile
+	$(call PRINTH,Building GTEST 'googletest'...)
 	@$(MAKE) -C $(GTEST_BUILD_DIR) -f $(GTEST_BUILD_DIR)/Makefile build
 	$(call PRINT,"")
 
+build-gtest: $(GTEST_BUILD_DIR)/build/libs/gtest.a
 ##############################################################################
 # Install Local Targests
 ##############################################################################
